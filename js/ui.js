@@ -278,7 +278,83 @@ PV.UI.getBestReason = function(samples) {
     return best.reason;
 };
 
-PV.UI.renderAllResults = function(data, startDate, endDate, lat, lon) {
+PV.UI.renderWeatherTimeline = function(weatherData, sampleTimes, container) {
+    container.innerHTML = '';
+    if (!weatherData || !weatherData.available || !sampleTimes.length) return;
+
+    var wrapper = document.createElement('div');
+    wrapper.className = 'weather-timeline-wrapper';
+
+    var label = document.createElement('div');
+    label.className = 'weather-timeline-label';
+    label.textContent = 'Cloud Cover';
+    wrapper.appendChild(label);
+
+    var bar = document.createElement('div');
+    bar.className = 'weather-timeline-bar';
+
+    // Build segments by grouping samples with similar cloud conditions
+    var weatherSamples = [];
+    for (var i = 0; i < sampleTimes.length; i++) {
+        var w = PV.Weather.getAtTime(weatherData, sampleTimes[i]);
+        weatherSamples.push(w);
+    }
+
+    // Group consecutive samples with same cloud description
+    var segments = [];
+    var current = { description: weatherSamples[0] ? weatherSamples[0].description : 'Unknown', cloudCover: weatherSamples[0] ? weatherSamples[0].cloudCover : 0, start: 0, end: 0 };
+    for (var i = 1; i < weatherSamples.length; i++) {
+        var desc = weatherSamples[i] ? weatherSamples[i].description : 'Unknown';
+        if (desc === current.description) {
+            current.end = i;
+        } else {
+            segments.push(current);
+            current = { description: desc, cloudCover: weatherSamples[i] ? weatherSamples[i].cloudCover : 0, start: i, end: i };
+        }
+    }
+    segments.push(current);
+
+    var total = sampleTimes.length - 1;
+    for (var s = 0; s < segments.length; s++) {
+        var seg = segments[s];
+        var widthPct = ((seg.end - seg.start + (s === segments.length - 1 ? 0 : 1)) / total * 100);
+        var div = document.createElement('div');
+        div.className = 'weather-timeline-segment';
+        div.style.width = widthPct + '%';
+        div.style.backgroundColor = PV.Weather.cloudCoverColor(seg.cloudCover);
+        div.title = seg.description + ' (' + seg.cloudCover + '% cloud cover)\n' +
+                    PV.UI.formatTime(sampleTimes[seg.start]) + ' \u2013 ' +
+                    PV.UI.formatTime(sampleTimes[seg.end]);
+        bar.appendChild(div);
+    }
+
+    wrapper.appendChild(bar);
+
+    // Legend
+    var legend = document.createElement('div');
+    legend.className = 'weather-timeline-legend';
+    var legendItems = [
+        { label: 'Clear', cover: 10 },
+        { label: 'Partly cloudy', cover: 35 },
+        { label: 'Mostly cloudy', cover: 65 },
+        { label: 'Overcast', cover: 90 }
+    ];
+    for (var i = 0; i < legendItems.length; i++) {
+        var item = document.createElement('span');
+        item.className = 'legend-item';
+        var swatch = document.createElement('span');
+        swatch.className = 'legend-swatch';
+        swatch.style.backgroundColor = PV.Weather.cloudCoverColor(legendItems[i].cover);
+        item.appendChild(swatch);
+        item.appendChild(document.createTextNode(legendItems[i].label));
+        legend.appendChild(item);
+    }
+    wrapper.appendChild(legend);
+
+    container.appendChild(wrapper);
+};
+
+PV.UI.renderAllResults = function(data, startDate, endDate, lat, lon, weatherData) {
     var container = document.getElementById('results');
     container.innerHTML = '';
     container.style.display = 'block';
@@ -297,10 +373,24 @@ PV.UI.renderAllResults = function(data, startDate, endDate, lat, lon) {
     container.appendChild(timelineContainer);
     PV.UI.renderSunTimeline(data.sunData, timelineContainer);
 
+    // Weather timeline
+    if (weatherData && weatherData.available) {
+        var weatherContainer = document.createElement('div');
+        weatherContainer.id = 'weather-timeline';
+        container.appendChild(weatherContainer);
+        PV.UI.renderWeatherTimeline(weatherData, data.sampleTimes, weatherContainer);
+    }
+
     // Note
     var note = document.createElement('div');
     note.className = 'results-note';
-    note.textContent = 'Visibility windows approximate (\u00b115 min). Assumes clear skies, no obstructions.';
+    if (weatherData && weatherData.available) {
+        note.textContent = 'Visibility windows approximate (\u00b115 min). Weather forecast from Open-Meteo. No obstructions assumed.';
+    } else if (weatherData && weatherData.reason === 'outside_range') {
+        note.textContent = 'Visibility windows approximate (\u00b115 min). Weather unavailable for this date range. Assumes clear skies, no obstructions.';
+    } else {
+        note.textContent = 'Visibility windows approximate (\u00b115 min). Assumes clear skies, no obstructions.';
+    }
     container.appendChild(note);
 
     // Sort: visible planets first, then by order

@@ -105,20 +105,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Defer computation to let the UI update
         setTimeout(function() {
-            try {
-                var observer = new Astronomy.Observer(lat, lon, 0);
-                var data = PV.computeAllPlanets(observer, startDate, endDate);
-                PV.UI.renderAllResults(data, startDate, endDate, lat, lon);
+            var observer = new Astronomy.Observer(lat, lon, 0);
 
-                // Scroll to results
-                document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
-            } catch (e) {
-                PV.UI.showError('Calculation error: ' + e.message);
-                console.error(e);
-            } finally {
-                calcBtn.disabled = false;
-                calcBtn.textContent = 'Calculate';
-            }
+            PV.Weather.fetchForecast(lat, lon, startDate, endDate)
+                .then(function(weatherData) {
+                    var data = PV.computeAllPlanets(observer, startDate, endDate, weatherData);
+                    PV.UI.renderAllResults(data, startDate, endDate, lat, lon, weatherData);
+                    document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+                })
+                .catch(function(e) {
+                    PV.UI.showError('Calculation error: ' + e.message);
+                    console.error(e);
+                })
+                .finally(function() {
+                    calcBtn.disabled = false;
+                    calcBtn.textContent = 'Calculate';
+                });
         }, 50);
     });
 

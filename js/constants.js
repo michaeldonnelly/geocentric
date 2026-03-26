@@ -42,3 +42,15 @@ PV.DAYTIME_RULES = {
 
 // Maximum allowed time range (7 days in ms)
 PV.MAX_RANGE_MS = 7 * 24 * 60 * 60 * 1000;
+
+// Weather: cloud cover magnitude penalty thresholds
+PV.CLOUD_COVER_THRESHOLDS = [
+    { max: 20,  penalty: 0 },
+    { max: 50,  penalty: 1.0 },
+    { max: 80,  penalty: 2.5 },
+    { max: 100, penalty: 5.0 }
+];
+
+// Weather: low atmospheric visibility (haze) penalty
+PV.HAZE_VISIBILITY_THRESHOLD = 10000; // meters
+PV.HAZE_MAX_PENALTY = 1.0;

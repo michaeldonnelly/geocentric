@@ -27,17 +27,23 @@ PV.getPlanetPosition = function(body, date, observer) {
     };
 };
 
-PV.isPlanetVisible = function(position, skyCondition, body) {
+PV.isPlanetVisible = function(position, skyCondition, body, weatherAtTime) {
     // Must be above minimum altitude
     if (position.altitude < PV.MIN_ALTITUDE) {
         return { visible: false, reason: 'Below horizon' };
     }
+
+    var weatherPenalty = (weatherAtTime && weatherAtTime.magnitudePenalty) ? weatherAtTime.magnitudePenalty : 0;
+    var weatherDesc = weatherAtTime ? weatherAtTime.description : null;
 
     // Daytime: only special-cased planets
     if (skyCondition === 'day') {
         var rule = PV.DAYTIME_RULES[body];
         if (!rule) {
             return { visible: false, reason: 'Sun is up' };
+        }
+        if (weatherPenalty >= 5.0) {
+            return { visible: false, reason: 'Overcast' };
         }
         if (position.magnitude > rule.maxMagnitude) {
             return { visible: false, reason: 'Too faint during daytime' };
@@ -49,8 +55,11 @@ PV.isPlanetVisible = function(position, skyCondition, body) {
     }
 
     // Twilight and night: check magnitude against sky condition limit
-    var magLimit = PV.MAGNITUDE_LIMITS[skyCondition];
+    var magLimit = PV.MAGNITUDE_LIMITS[skyCondition] - weatherPenalty;
     if (position.magnitude > magLimit) {
+        if (weatherPenalty > 0 && position.magnitude <= PV.MAGNITUDE_LIMITS[skyCondition]) {
+            return { visible: false, reason: 'Too faint \u2014 ' + (weatherDesc || 'poor weather').toLowerCase() };
+        }
         return { visible: false, reason: 'Too faint in ' + PV.skyConditionLabel(skyCondition) };
     }
 
@@ -98,13 +107,14 @@ PV.computeSunData = function(sampleTimes, observer) {
     });
 };
 
-PV.computeVisibility = function(planet, observer, sampleTimes, sunData) {
+PV.computeVisibility = function(planet, observer, sampleTimes, sunData, weatherData) {
     var samples = [];
     for (var i = 0; i < sampleTimes.length; i++) {
         var time = sampleTimes[i];
         var sky = sunData[i];
         var pos = PV.getPlanetPosition(planet.body, time, observer);
-        var vis = PV.isPlanetVisible(pos, sky.skyCondition, planet.body);
+        var weather = weatherData ? PV.Weather.getAtTime(weatherData, time) : null;
+        var vis = PV.isPlanetVisible(pos, sky.skyCondition, planet.body, weather);
         samples.push({
             time: time,
             altitude: pos.altitude,
@@ -113,7 +123,8 @@ PV.computeVisibility = function(planet, observer, sampleTimes, sunData) {
             angularSepFromSun: pos.angularSepFromSun,
             skyCondition: sky.skyCondition,
             visible: vis.visible,
-            reason: vis.reason
+            reason: vis.reason,
+            weather: weather
         });
     }
 
@@ -160,13 +171,13 @@ PV.computeVisibility = function(planet, observer, sampleTimes, sunData) {
     };
 };
 
-PV.computeAllPlanets = function(observer, start, end) {
+PV.computeAllPlanets = function(observer, start, end, weatherData) {
     var sampleTimes = PV.generateSamples(start, end);
     var sunData = PV.computeSunData(sampleTimes, observer);
 
     var results = [];
     for (var i = 0; i < PV.PLANETS.length; i++) {
-        results.push(PV.computeVisibility(PV.PLANETS[i], observer, sampleTimes, sunData));
+        results.push(PV.computeVisibility(PV.PLANETS[i], observer, sampleTimes, sunData, weatherData));
     }
 
     return { planets: results, sunData: sunData, sampleTimes: sampleTimes };
