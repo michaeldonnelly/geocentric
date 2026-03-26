@@ -1,0 +1,334 @@
+var PV = window.PV || {};
+PV.UI = {};
+
+PV.UI.formatTime = function(date) {
+    return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+};
+
+PV.UI.formatDate = function(date) {
+    return date.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+};
+
+PV.UI.formatDateTime = function(date) {
+    return date.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' ' +
+           date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+};
+
+PV.UI.formatAltitude = function(deg) {
+    return Math.round(deg) + '\u00b0 above horizon';
+};
+
+PV.UI.formatAzimuth = function(deg) {
+    var directions = ['N','NNE','NE','ENE','E','ESE','SE','SSE',
+                      'S','SSW','SW','WSW','W','WNW','NW','NNW'];
+    var idx = Math.round(deg / 22.5) % 16;
+    return directions[idx] + ' (' + Math.round(deg) + '\u00b0)';
+};
+
+PV.UI.formatMagnitude = function(mag) {
+    var desc;
+    if (mag < -4) desc = 'brilliant';
+    else if (mag < -2) desc = 'very bright';
+    else if (mag < 0) desc = 'bright';
+    else if (mag < 2) desc = 'moderate';
+    else if (mag < 4) desc = 'faint';
+    else desc = 'very faint';
+    return 'mag ' + mag.toFixed(1) + ' (' + desc + ')';
+};
+
+PV.UI.skyConditionColor = function(condition) {
+    var colors = {
+        night: '#0d1117',
+        astroTwilight: '#1a2332',
+        nautTwilight: '#2a3a52',
+        civilTwilight: '#4a6080',
+        day: '#87CEEB'
+    };
+    return colors[condition] || '#0d1117';
+};
+
+PV.UI.renderSunTimeline = function(sunData, container) {
+    container.innerHTML = '';
+    if (!sunData || sunData.length === 0) return;
+
+    var wrapper = document.createElement('div');
+    wrapper.className = 'sun-timeline-wrapper';
+
+    var label = document.createElement('div');
+    label.className = 'sun-timeline-label';
+    label.textContent = 'Sky Conditions';
+    wrapper.appendChild(label);
+
+    var bar = document.createElement('div');
+    bar.className = 'sun-timeline-bar';
+
+    // Group consecutive samples with same sky condition
+    var segments = [];
+    var current = { condition: sunData[0].skyCondition, start: 0, end: 0 };
+    for (var i = 1; i < sunData.length; i++) {
+        if (sunData[i].skyCondition === current.condition) {
+            current.end = i;
+        } else {
+            segments.push(current);
+            current = { condition: sunData[i].skyCondition, start: i, end: i };
+        }
+    }
+    segments.push(current);
+
+    var total = sunData.length - 1;
+    for (var s = 0; s < segments.length; s++) {
+        var seg = segments[s];
+        var widthPct = ((seg.end - seg.start + (s === segments.length - 1 ? 0 : 1)) / total * 100);
+        var div = document.createElement('div');
+        div.className = 'sun-timeline-segment';
+        div.style.width = widthPct + '%';
+        div.style.backgroundColor = PV.UI.skyConditionColor(seg.condition);
+        div.title = PV.skyConditionLabel(seg.condition) + '\n' +
+                    PV.UI.formatTime(sunData[seg.start].time) + ' \u2013 ' +
+                    PV.UI.formatTime(sunData[seg.end].time);
+        bar.appendChild(div);
+    }
+
+    wrapper.appendChild(bar);
+
+    // Legend
+    var legend = document.createElement('div');
+    legend.className = 'sun-timeline-legend';
+    var conditions = ['night', 'astroTwilight', 'nautTwilight', 'civilTwilight', 'day'];
+    var labels = ['Night', 'Astro Twilight', 'Nautical Twilight', 'Civil Twilight', 'Day'];
+    for (var i = 0; i < conditions.length; i++) {
+        var item = document.createElement('span');
+        item.className = 'legend-item';
+        var swatch = document.createElement('span');
+        swatch.className = 'legend-swatch';
+        swatch.style.backgroundColor = PV.UI.skyConditionColor(conditions[i]);
+        item.appendChild(swatch);
+        item.appendChild(document.createTextNode(labels[i]));
+        legend.appendChild(item);
+    }
+    wrapper.appendChild(legend);
+
+    // Time markers
+    var markers = document.createElement('div');
+    markers.className = 'sun-timeline-markers';
+    var startMark = document.createElement('span');
+    startMark.textContent = PV.UI.formatTime(sunData[0].time);
+    var endMark = document.createElement('span');
+    endMark.textContent = PV.UI.formatTime(sunData[sunData.length - 1].time);
+    markers.appendChild(startMark);
+    markers.appendChild(endMark);
+    wrapper.appendChild(markers);
+
+    container.appendChild(wrapper);
+};
+
+PV.UI.renderSparkline = function(canvas, samples, color) {
+    var ctx = canvas.getContext('2d');
+    var w = canvas.width = canvas.offsetWidth * 2;
+    var h = canvas.height = canvas.offsetHeight * 2;
+    ctx.scale(2, 2);
+    var dw = canvas.offsetWidth;
+    var dh = canvas.offsetHeight;
+
+    ctx.clearRect(0, 0, dw, dh);
+
+    // Find altitude range
+    var maxAlt = -90, minAlt = 90;
+    for (var i = 0; i < samples.length; i++) {
+        if (samples[i].altitude > maxAlt) maxAlt = samples[i].altitude;
+        if (samples[i].altitude < minAlt) minAlt = samples[i].altitude;
+    }
+    // Ensure we always show the horizon line
+    if (minAlt > -5) minAlt = -5;
+    if (maxAlt < 10) maxAlt = 10;
+    var range = maxAlt - minAlt;
+
+    function toY(alt) {
+        return dh - ((alt - minAlt) / range) * dh;
+    }
+    function toX(idx) {
+        return (idx / (samples.length - 1)) * dw;
+    }
+
+    // Horizon line
+    var horizonY = toY(0);
+    ctx.strokeStyle = '#30363d';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(0, horizonY);
+    ctx.lineTo(dw, horizonY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Min altitude line
+    var minAltY = toY(PV.MIN_ALTITUDE);
+    ctx.strokeStyle = '#21262d';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([2, 4]);
+    ctx.beginPath();
+    ctx.moveTo(0, minAltY);
+    ctx.lineTo(dw, minAltY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Altitude curve - visible portions highlighted
+    ctx.lineWidth = 2;
+    for (var i = 1; i < samples.length; i++) {
+        ctx.strokeStyle = samples[i].visible ? color : '#30363d';
+        ctx.beginPath();
+        ctx.moveTo(toX(i - 1), toY(samples[i - 1].altitude));
+        ctx.lineTo(toX(i), toY(samples[i].altitude));
+        ctx.stroke();
+    }
+
+    // Fill visible regions
+    ctx.globalAlpha = 0.15;
+    ctx.fillStyle = color;
+    for (var i = 0; i < samples.length; i++) {
+        if (samples[i].visible) {
+            var x = toX(i);
+            var y = toY(samples[i].altitude);
+            var barWidth = dw / samples.length;
+            ctx.fillRect(x - barWidth / 2, y, barWidth, horizonY - y);
+        }
+    }
+    ctx.globalAlpha = 1.0;
+};
+
+PV.UI.renderPlanetCard = function(result) {
+    var planet = result.planet;
+    var card = document.createElement('div');
+    card.className = 'planet-card' + (result.isVisible ? ' visible' : ' not-visible');
+
+    // Header
+    var header = document.createElement('div');
+    header.className = 'planet-header';
+    var dot = document.createElement('span');
+    dot.className = 'planet-dot';
+    dot.style.backgroundColor = planet.color;
+    var name = document.createElement('span');
+    name.className = 'planet-name';
+    name.textContent = planet.name;
+    var badge = document.createElement('span');
+    badge.className = 'visibility-badge ' + (result.isVisible ? 'badge-visible' : 'badge-not-visible');
+    badge.textContent = result.isVisible ? 'Visible' : 'Not Visible';
+    header.appendChild(dot);
+    header.appendChild(name);
+    header.appendChild(badge);
+    card.appendChild(header);
+
+    if (result.isVisible) {
+        // Visibility windows
+        var windowsDiv = document.createElement('div');
+        windowsDiv.className = 'planet-windows';
+        for (var w = 0; w < result.windows.length; w++) {
+            var win = result.windows[w];
+            var winEl = document.createElement('div');
+            winEl.className = 'planet-window';
+            winEl.textContent = PV.UI.formatDateTime(win.start) + ' \u2013 ' + PV.UI.formatDateTime(win.end);
+            windowsDiv.appendChild(winEl);
+        }
+        card.appendChild(windowsDiv);
+
+        // Best viewing details
+        var details = document.createElement('div');
+        details.className = 'planet-details';
+        details.innerHTML =
+            '<div class="detail-row"><span class="detail-label">Best viewing</span><span class="detail-value">' +
+            PV.UI.formatDateTime(result.bestTime) + '</span></div>' +
+            '<div class="detail-row"><span class="detail-label">Altitude</span><span class="detail-value">' +
+            PV.UI.formatAltitude(result.bestAltitude) + '</span></div>' +
+            '<div class="detail-row"><span class="detail-label">Direction</span><span class="detail-value">' +
+            PV.UI.formatAzimuth(result.bestAzimuth) + '</span></div>' +
+            '<div class="detail-row"><span class="detail-label">Brightness</span><span class="detail-value">' +
+            PV.UI.formatMagnitude(result.bestMagnitude) + '</span></div>';
+        card.appendChild(details);
+    } else {
+        // Show reason from the "best" sample (highest altitude, or first sample)
+        var reason = PV.UI.getBestReason(result.allSamples);
+        var reasonDiv = document.createElement('div');
+        reasonDiv.className = 'planet-reason';
+        reasonDiv.textContent = reason;
+        card.appendChild(reasonDiv);
+    }
+
+    // Sparkline
+    var sparkContainer = document.createElement('div');
+    sparkContainer.className = 'sparkline-container';
+    var canvas = document.createElement('canvas');
+    canvas.className = 'sparkline-canvas';
+    sparkContainer.appendChild(canvas);
+    card.appendChild(sparkContainer);
+
+    // Defer sparkline rendering until the card is in the DOM
+    requestAnimationFrame(function() {
+        PV.UI.renderSparkline(canvas, result.allSamples, planet.color);
+    });
+
+    return card;
+};
+
+PV.UI.getBestReason = function(samples) {
+    // Find the sample with highest altitude to get the most informative reason
+    var best = samples[0];
+    for (var i = 1; i < samples.length; i++) {
+        if (samples[i].altitude > best.altitude) best = samples[i];
+    }
+    return best.reason;
+};
+
+PV.UI.renderAllResults = function(data, startDate, endDate, lat, lon) {
+    var container = document.getElementById('results');
+    container.innerHTML = '';
+    container.style.display = 'block';
+
+    // Summary
+    var summary = document.createElement('div');
+    summary.className = 'results-summary';
+    summary.textContent = PV.UI.formatDateTime(startDate) + ' \u2013 ' + PV.UI.formatDateTime(endDate) +
+        '  \u00b7  ' + Math.abs(lat).toFixed(2) + '\u00b0' + (lat >= 0 ? 'N' : 'S') +
+        ', ' + Math.abs(lon).toFixed(2) + '\u00b0' + (lon >= 0 ? 'E' : 'W');
+    container.appendChild(summary);
+
+    // Sun timeline
+    var timelineContainer = document.createElement('div');
+    timelineContainer.id = 'sun-timeline';
+    container.appendChild(timelineContainer);
+    PV.UI.renderSunTimeline(data.sunData, timelineContainer);
+
+    // Note
+    var note = document.createElement('div');
+    note.className = 'results-note';
+    note.textContent = 'Visibility windows approximate (\u00b115 min). Assumes clear skies, no obstructions.';
+    container.appendChild(note);
+
+    // Sort: visible planets first, then by order
+    var sorted = data.planets.slice().sort(function(a, b) {
+        if (a.isVisible && !b.isVisible) return -1;
+        if (!a.isVisible && b.isVisible) return 1;
+        return 0;
+    });
+
+    // Planet cards
+    var grid = document.createElement('div');
+    grid.className = 'planet-grid';
+    for (var i = 0; i < sorted.length; i++) {
+        var card = PV.UI.renderPlanetCard(sorted[i]);
+        card.style.animationDelay = (i * 0.08) + 's';
+        grid.appendChild(card);
+    }
+    container.appendChild(grid);
+};
+
+PV.UI.showError = function(msg) {
+    var el = document.getElementById('error-message');
+    el.textContent = msg;
+    el.style.display = 'block';
+};
+
+PV.UI.clearError = function() {
+    var el = document.getElementById('error-message');
+    el.textContent = '';
+    el.style.display = 'none';
+};

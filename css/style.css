@@ -1,0 +1,431 @@
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
+    background: #0d1117;
+    color: #e6edf3;
+    line-height: 1.6;
+    min-height: 100vh;
+}
+
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+}
+
+/* Header */
+
+.page-header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+}
+
+.page-header h1 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #e6edf3;
+    margin-bottom: 0.3rem;
+}
+
+.page-header p {
+    color: #8b949e;
+    font-size: 0.95rem;
+}
+
+/* Input form */
+
+.input-panel {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.2rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.form-group.full-width {
+    grid-column: 1 / -1;
+}
+
+.form-group label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #8b949e;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.form-group input {
+    background: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 0.6rem 0.8rem;
+    color: #e6edf3;
+    font-size: 0.95rem;
+    font-family: inherit;
+    transition: border-color 0.2s;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #58a6ff;
+}
+
+.form-group input::placeholder {
+    color: #484f58;
+}
+
+/* Buttons */
+
+.location-row {
+    display: flex;
+    gap: 0.8rem;
+    align-items: flex-end;
+}
+
+.location-row .form-group {
+    flex: 1;
+}
+
+.btn {
+    border: none;
+    border-radius: 8px;
+    padding: 0.6rem 1.2rem;
+    font-size: 0.9rem;
+    font-family: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, opacity 0.2s;
+    white-space: nowrap;
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-secondary {
+    background: #21262d;
+    color: #e6edf3;
+    border: 1px solid #30363d;
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background: #30363d;
+}
+
+.btn-primary {
+    background: #58a6ff;
+    color: #0d1117;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: #79bbff;
+}
+
+.locate-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    justify-content: flex-end;
+}
+
+.location-status {
+    font-size: 0.8rem;
+    min-height: 1.2em;
+}
+
+.location-status.success {
+    color: #3fb950;
+}
+
+.location-status.error {
+    color: #f85149;
+}
+
+.actions {
+    margin-top: 1.2rem;
+    text-align: center;
+}
+
+.actions .btn-primary {
+    padding: 0.7rem 2.5rem;
+    font-size: 1rem;
+}
+
+/* Error message */
+
+#error-message {
+    display: none;
+    background: #f8514922;
+    border: 1px solid #f85149;
+    border-radius: 8px;
+    padding: 0.7rem 1rem;
+    color: #f85149;
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+/* Results */
+
+#results {
+    display: none;
+}
+
+.results-summary {
+    text-align: center;
+    color: #8b949e;
+    font-size: 0.9rem;
+    margin-bottom: 1.2rem;
+}
+
+.results-note {
+    text-align: center;
+    color: #484f58;
+    font-size: 0.8rem;
+    margin-bottom: 1.5rem;
+}
+
+/* Sun timeline */
+
+.sun-timeline-wrapper {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 10px;
+    padding: 1rem 1.2rem;
+    margin-bottom: 1rem;
+}
+
+.sun-timeline-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #8b949e;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+}
+
+.sun-timeline-bar {
+    display: flex;
+    height: 28px;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid #30363d;
+}
+
+.sun-timeline-segment {
+    min-width: 2px;
+    transition: opacity 0.2s;
+    cursor: default;
+}
+
+.sun-timeline-segment:hover {
+    opacity: 0.8;
+}
+
+.sun-timeline-markers {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: #484f58;
+    margin-top: 0.3rem;
+}
+
+.sun-timeline-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+    margin-top: 0.6rem;
+    font-size: 0.75rem;
+    color: #8b949e;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.legend-swatch {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    border: 1px solid #30363d;
+}
+
+/* Planet cards */
+
+.planet-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+}
+
+.planet-card {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    padding: 1.2rem;
+    animation: fadeInUp 0.4s ease both;
+}
+
+.planet-card.visible {
+    border-color: #3fb95044;
+}
+
+.planet-card.not-visible {
+    opacity: 0.7;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.planet-header {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.8rem;
+}
+
+.planet-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.planet-name {
+    font-size: 1.1rem;
+    font-weight: 700;
+    flex: 1;
+}
+
+.visibility-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.2rem 0.6rem;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.badge-visible {
+    background: #3fb95022;
+    color: #3fb950;
+    border: 1px solid #3fb95044;
+}
+
+.badge-not-visible {
+    background: #f8514922;
+    color: #f85149;
+    border: 1px solid #f8514944;
+}
+
+.planet-windows {
+    margin-bottom: 0.6rem;
+}
+
+.planet-window {
+    font-size: 0.85rem;
+    color: #58a6ff;
+    padding: 0.15rem 0;
+}
+
+.planet-details {
+    margin-bottom: 0.5rem;
+}
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.15rem 0;
+    font-size: 0.85rem;
+}
+
+.detail-label {
+    color: #8b949e;
+}
+
+.detail-value {
+    color: #e6edf3;
+    font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+    font-size: 0.82rem;
+}
+
+.planet-reason {
+    color: #8b949e;
+    font-size: 0.85rem;
+    font-style: italic;
+    margin-bottom: 0.5rem;
+}
+
+/* Sparkline */
+
+.sparkline-container {
+    margin-top: 0.6rem;
+    height: 50px;
+    border-radius: 6px;
+    overflow: hidden;
+    background: #0d1117;
+}
+
+.sparkline-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+/* Responsive */
+
+@media (max-width: 600px) {
+    .container {
+        padding: 1.2rem 1rem;
+    }
+
+    .page-header h1 {
+        font-size: 1.4rem;
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .location-row {
+        flex-direction: column;
+    }
+
+    .planet-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .sun-timeline-legend {
+        gap: 0.5rem;
+        font-size: 0.7rem;
+    }
+}
