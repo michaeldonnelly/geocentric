@@ -12,6 +12,8 @@ Geocentric is a web page that tells you which planets are visible from your loca
 
 Open `index.html` in a browser. Enter your location (or click "Use My Location"), set a time range, and hit Calculate.
 
-## Acknowledgment
+## Acknowledgments
 
-Code written by Claude (Anthropic) via Claude Code. 
+Code written by Claude (Anthropic) via Claude Code.
+
+Favicon derived from [Venus geocentric orbit curve simplified (pentagram)](https://commons.wikimedia.org/wiki/File:Venus_geocentric_orbit_curve_simplified_(pentagram).svg) by AnonMoos on Wikimedia Commons, released into the public domain.
