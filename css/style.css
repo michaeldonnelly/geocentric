@@ -401,6 +401,13 @@ body {
     display: block;
 }
 
+/* Footer */
+
+.page-footer {
+    text-align: center;
+    margin-top: 2rem;
+}
+
 /* Responsive */
 
 @media (max-width: 600px) {
