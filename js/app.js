@@ -45,6 +45,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 locStatus.className = 'location-status success';
                 locateBtn.textContent = 'Use My Location';
                 locateBtn.disabled = false;
+                calcBtn.click();
             },
             function(err) {
                 var msg = 'Could not get location';
