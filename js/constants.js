@@ -4,7 +4,7 @@ PV.PLANETS = [
     { name: 'Mercury', body: 'Mercury', color: '#b0b0b0' },
     { name: 'Venus',   body: 'Venus',   color: '#ffe4b5' },
     { name: 'Mars',    body: 'Mars',     color: '#e05040' },
-    { name: 'Jupiter', body: 'Jupiter',  color: '#e8c48a' },
+    { name: 'Jupiter', body: 'Jupiter',  color: '#e0a040' },
     { name: 'Saturn',  body: 'Saturn',   color: '#c9b07a' },
     { name: 'Uranus',  body: 'Uranus',   color: '#7de3e3' },
     { name: 'Neptune', body: 'Neptune',  color: '#4169e1' }
