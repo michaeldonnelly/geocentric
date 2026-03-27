@@ -1,12 +1,21 @@
 # Geocentric
 
-Geocentric is a web page that tells you which planets are visible from your location during a given time range. It accounts for planet altitude, sun position, sky brightness, apparent magnitude, and daytime visibility.
+Geocentric is a web page that tells you which planets are visible from your location during a given time range. It accounts for planet altitude, sun position, sky brightness, apparent magnitude, daytime visibility, and weather conditions.
 
 ## Tech
 
 - Vanilla HTML/CSS/JS, no build step
 - [Astronomy Engine](https://github.com/cosinekitty/astronomy) (MIT) via CDN for positional calculations
+- [Open-Meteo](https://open-meteo.com/) for weather/cloud cover forecasts
 - Browser Geolocation API for location input
+
+## Features
+
+- Per-planet visibility with best viewing time, brightness, direction, and altitude
+- Altitude sparkline charts with time and horizon labels
+- Sky Conditions timeline (sun position / twilight phases)
+- Cloud Cover timeline from weather forecast data
+- Auto-calculates after geolocation
 
 ## Usage
 
