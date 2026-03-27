@@ -130,7 +130,22 @@ PV.UI.renderSparkline = function(canvas, samples, color) {
     var dw = canvas.offsetWidth;
     var dh = canvas.offsetHeight;
 
+    var bottomMargin = 12; // space for time labels
+    var leftMargin = 12;  // space for altitude label
+    var chartH = dh - bottomMargin;
+
     ctx.clearRect(0, 0, dw, dh);
+
+    // Rotated "altitude" label on the left
+    ctx.save();
+    ctx.font = '7px -apple-system, sans-serif';
+    ctx.fillStyle = '#484f58';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.translate(5, chartH / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText('altitude', 0, 0);
+    ctx.restore();
 
     // Find altitude range
     var maxAlt = -90, minAlt = 90;
@@ -144,10 +159,11 @@ PV.UI.renderSparkline = function(canvas, samples, color) {
     var range = maxAlt - minAlt;
 
     function toY(alt) {
-        return dh - ((alt - minAlt) / range) * dh;
+        return chartH - ((alt - minAlt) / range) * chartH;
     }
+    var chartW = dw - leftMargin;
     function toX(idx) {
-        return (idx / (samples.length - 1)) * dw;
+        return leftMargin + (idx / (samples.length - 1)) * chartW;
     }
 
     // Horizon line
@@ -156,10 +172,17 @@ PV.UI.renderSparkline = function(canvas, samples, color) {
     ctx.lineWidth = 1;
     ctx.setLineDash([4, 4]);
     ctx.beginPath();
-    ctx.moveTo(0, horizonY);
+    ctx.moveTo(leftMargin, horizonY);
     ctx.lineTo(dw, horizonY);
     ctx.stroke();
     ctx.setLineDash([]);
+
+    // Horizon label
+    ctx.font = '8px -apple-system, sans-serif';
+    ctx.fillStyle = '#484f58';
+    ctx.textBaseline = 'bottom';
+    ctx.textAlign = 'left';
+    ctx.fillText('horizon', leftMargin + 2, horizonY - 2);
 
     // Min altitude line
     var minAltY = toY(PV.MIN_ALTITUDE);
@@ -167,7 +190,7 @@ PV.UI.renderSparkline = function(canvas, samples, color) {
     ctx.lineWidth = 1;
     ctx.setLineDash([2, 4]);
     ctx.beginPath();
-    ctx.moveTo(0, minAltY);
+    ctx.moveTo(leftMargin, minAltY);
     ctx.lineTo(dw, minAltY);
     ctx.stroke();
     ctx.setLineDash([]);
@@ -194,6 +217,49 @@ PV.UI.renderSparkline = function(canvas, samples, color) {
         }
     }
     ctx.globalAlpha = 1.0;
+
+    // Time labels along the bottom
+    ctx.font = '8px -apple-system, sans-serif';
+    ctx.fillStyle = '#484f58';
+    ctx.textBaseline = 'top';
+    var labelY = chartH + 2;
+    var firstTime = samples[0].time.getTime();
+    var lastTime = samples[samples.length - 1].time.getTime();
+    var totalMs = lastTime - firstTime;
+
+    // Find nice hour boundaries within the sample range
+    var t = new Date(samples[0].time);
+    t.setMinutes(0, 0, 0);
+    t.setHours(t.getHours() + 1); // start at next whole hour
+    var labels = [];
+    while (t.getTime() <= lastTime) {
+        var frac = (t.getTime() - firstTime) / totalMs;
+        if (frac >= 0.05 && frac <= 0.95) {
+            var hr = t.getHours();
+            var ampm = hr >= 12 ? 'p' : 'a';
+            var hr12 = hr % 12 || 12;
+            labels.push({ x: leftMargin + frac * chartW, text: hr12 + ampm });
+        }
+        t.setHours(t.getHours() + 1);
+    }
+
+    // Skip labels that are too close together
+    var minGap = 28;
+    var drawn = [];
+    for (var i = 0; i < labels.length; i++) {
+        var tooClose = false;
+        for (var j = 0; j < drawn.length; j++) {
+            if (Math.abs(labels[i].x - drawn[j]) < minGap) {
+                tooClose = true;
+                break;
+            }
+        }
+        if (!tooClose) {
+            ctx.textAlign = 'center';
+            ctx.fillText(labels[i].text, labels[i].x, labelY);
+            drawn.push(labels[i].x);
+        }
+    }
 };
 
 PV.UI.renderPlanetCard = function(result) {
@@ -237,12 +303,12 @@ PV.UI.renderPlanetCard = function(result) {
         details.innerHTML =
             '<div class="detail-row"><span class="detail-label">Best viewing</span><span class="detail-value">' +
             PV.UI.formatDateTime(result.bestTime) + '</span></div>' +
-            '<div class="detail-row"><span class="detail-label">Altitude</span><span class="detail-value">' +
-            PV.UI.formatAltitude(result.bestAltitude) + '</span></div>' +
+            '<div class="detail-row"><span class="detail-label">Brightness</span><span class="detail-value">' +
+            PV.UI.formatMagnitude(result.bestMagnitude) + '</span></div>' +
             '<div class="detail-row"><span class="detail-label">Direction</span><span class="detail-value">' +
             PV.UI.formatAzimuth(result.bestAzimuth) + '</span></div>' +
-            '<div class="detail-row"><span class="detail-label">Brightness</span><span class="detail-value">' +
-            PV.UI.formatMagnitude(result.bestMagnitude) + '</span></div>';
+            '<div class="detail-row"><span class="detail-label">Altitude</span><span class="detail-value">' +
+            PV.UI.formatAltitude(result.bestAltitude) + '</span></div>';
         card.appendChild(details);
     } else {
         // Show reason from the "best" sample (highest altitude, or first sample)
@@ -260,6 +326,7 @@ PV.UI.renderPlanetCard = function(result) {
     canvas.className = 'sparkline-canvas';
     sparkContainer.appendChild(canvas);
     card.appendChild(sparkContainer);
+
 
     // Defer sparkline rendering until the card is in the DOM
     requestAnimationFrame(function() {
