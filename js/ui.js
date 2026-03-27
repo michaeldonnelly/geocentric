@@ -91,6 +91,17 @@ PV.UI.renderSunTimeline = function(sunData, container) {
 
     wrapper.appendChild(bar);
 
+    // Time markers
+    var markers = document.createElement('div');
+    markers.className = 'sun-timeline-markers';
+    var startMark = document.createElement('span');
+    startMark.textContent = PV.UI.formatTime(sunData[0].time);
+    var endMark = document.createElement('span');
+    endMark.textContent = PV.UI.formatTime(sunData[sunData.length - 1].time);
+    markers.appendChild(startMark);
+    markers.appendChild(endMark);
+    wrapper.appendChild(markers);
+
     // Legend
     var legend = document.createElement('div');
     legend.className = 'sun-timeline-legend';
@@ -107,17 +118,6 @@ PV.UI.renderSunTimeline = function(sunData, container) {
         legend.appendChild(item);
     }
     wrapper.appendChild(legend);
-
-    // Time markers
-    var markers = document.createElement('div');
-    markers.className = 'sun-timeline-markers';
-    var startMark = document.createElement('span');
-    startMark.textContent = PV.UI.formatTime(sunData[0].time);
-    var endMark = document.createElement('span');
-    endMark.textContent = PV.UI.formatTime(sunData[sunData.length - 1].time);
-    markers.appendChild(startMark);
-    markers.appendChild(endMark);
-    wrapper.appendChild(markers);
 
     container.appendChild(wrapper);
 };
@@ -396,6 +396,17 @@ PV.UI.renderWeatherTimeline = function(weatherData, sampleTimes, container) {
     }
 
     wrapper.appendChild(bar);
+
+    // Time markers
+    var markers = document.createElement('div');
+    markers.className = 'weather-timeline-markers';
+    var startMark = document.createElement('span');
+    startMark.textContent = PV.UI.formatTime(sampleTimes[0]);
+    var endMark = document.createElement('span');
+    endMark.textContent = PV.UI.formatTime(sampleTimes[sampleTimes.length - 1]);
+    markers.appendChild(startMark);
+    markers.appendChild(endMark);
+    wrapper.appendChild(markers);
 
     // Legend
     var legend = document.createElement('div');

@@ -438,6 +438,14 @@ body {
     opacity: 0.8;
 }
 
+.weather-timeline-markers {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: #484f58;
+    margin-top: 0.3rem;
+}
+
 .weather-timeline-legend {
     display: flex;
     flex-wrap: wrap;
